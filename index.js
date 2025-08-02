@@ -8,6 +8,7 @@ const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const tagRoutes = require("./routes/tagRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -31,6 +32,7 @@ app.use("/product", productRoutes);
 app.use("/category", categoryRoutes);
 app.use("/cart", cartRoutes);
 app.use("/tag", tagRoutes);
+app.use("/order", orderRoutes);
 
 //welcome route
 app.get("/", (req, res) => {
@@ -42,6 +44,7 @@ app.get("/", (req, res) => {
       category: "/category",
       cart: "/cart",
       cart: "/tag",
+      cart: "/order",
     },
   });
 });

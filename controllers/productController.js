@@ -43,7 +43,9 @@ const getProductByCategory = async (req, res) => {
 
 const getProductByTag = async (req, res) => {
   try {
-    const tag = await Tag.findOne({ name: req.params.tagName.trim().toLowerCase() });
+    const tag = await Tag.findOne({
+      name: req.params.tagName.trim().toLowerCase(),
+    });
 
     if (!tag) {
       return res.status(404).json({ msg: "Tag is unknown" });
@@ -89,7 +91,15 @@ const createProduct = async (req, res) => {
         .json({ msg: "one or more product data did not send" });
     }
 
+    const existingProduct = await Product.findOne({ name: name.trim().toLowerCase() });
+    if (existingProduct) {
+      return res.status(409).json({ msg: "Product already exists" });
+    }
+
     const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ msg: "Category not found" });
+    }
 
     const newProduct = await Product.create({
       name,
@@ -102,7 +112,6 @@ const createProduct = async (req, res) => {
       category,
       stock,
       ratings,
-      reviews,
     });
 
     res.status(201).json({
@@ -194,7 +203,9 @@ const assignTagsToProduct = async (req, res) => {
     const { id } = req.params;
 
     if (!Array.isArray(tags)) {
-      return res.status(400).json({ msg: "You must send an array of tag names" });
+      return res
+        .status(400)
+        .json({ msg: "You must send an array of tag names" });
     }
 
     const foundTags = await Tag.find({ name: { $in: tags } });
@@ -203,7 +214,7 @@ const assignTagsToProduct = async (req, res) => {
       return res.status(404).json({ msg: "No matching tags found" });
     }
 
-    const tagIds = foundTags.map(tag => tag._id);
+    const tagIds = foundTags.map((tag) => tag._id);
 
     const product = await Product.findByIdAndUpdate(
       id,
@@ -218,7 +229,6 @@ const assignTagsToProduct = async (req, res) => {
     res.status(500).json({ msg: error.message });
   }
 };
-
 
 module.exports = {
   getProducts,
