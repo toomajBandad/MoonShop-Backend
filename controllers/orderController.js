@@ -43,18 +43,6 @@ const getOrdersByUser = async (req, res) => {
       return res.status(404).json({ msg: "No orders found for this user" });
     }
 
-    // orders.forEach((order) => {
-    //   order.items.forEach((item) => {
-    //     console.log(item);
-    //   });
-    // });
-
-    orders.forEach((order) => {
-      order.items.forEach((item) => {
-        console.log(item.product); // should be full product object
-      });
-    });
-
     res.status(200).json(orders);
   } catch (error) {
     console.error("Error fetching orders:", error);
