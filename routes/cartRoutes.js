@@ -8,7 +8,7 @@ const {
   createCart,
   addToCart,
   updateCart,
-  deleteCart,
+  deleteAllCartItems,
 } = require("../controllers/cartController");
 
 router.get("/all", getCarts);
@@ -17,6 +17,6 @@ router.get("/user/:userId", getCartByuserId);
 router.post("/newCart", createCart);
 router.post("/add", addToCart);
 router.put("/:userId", updateCart);
-router.delete("/:id", deleteCart);
+router.delete("/:id", deleteAllCartItems);
 
 module.exports = router;

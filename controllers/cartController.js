@@ -140,9 +140,17 @@ const updateCart = async (req, res) => {
   }
 };
 
-const deleteCart = async (req, res) => {
+const deleteAllCartItems = async (req, res) => {
   try {
-    const cart = await Cart.findByIdAndDelete(req.params.id);
+    const cart = await Cart.findByIdAndUpdate(
+      req.params.id,
+      {
+        items: [],
+      },
+      {
+        new: true,
+      }
+    );
 
     if (!cart) {
       return res.status(404).json({ msg: "Cart did not find !" });
@@ -161,5 +169,5 @@ module.exports = {
   createCart,
   addToCart,
   updateCart,
-  deleteCart,
+  deleteAllCartItems,
 };
