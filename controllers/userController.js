@@ -188,27 +188,31 @@ const sendMail = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const updateFields = {};
 
-    if (!username || !password || !email) {
-      return res
-        .status(400)
-        .json({ msg: "error with username, password or email" });
+    // Only add fields that are present in req.body
+    if (req.body.username) updateFields.username = req.body.username;
+    if (req.body.email) updateFields.email = req.body.email;
+    if (req.body.password) {
+      const saltRounds = 10;
+      updateFields.password = await bcrypt.hash(req.body.password, saltRounds);
     }
-
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    if (req.body.addressesList)
+      updateFields.addressesList = req.body.addressesList;
+    if (req.body.creditBalance !== undefined)
+      updateFields.creditBalance = req.body.creditBalance;
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { username: username, password: hashedPassword, email: email },
-      { new: true } // Devuelve el documento actualizado
+      { $set: updateFields },
+      { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ msg: "User did not find ! " });
+      return res.status(404).json({ msg: "User not found!" });
     }
-    return res.status(201).json({ msg: "User edited successfully", user });
+
+    return res.status(200).json({ msg: "User updated successfully", user });
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
