@@ -8,14 +8,15 @@ const {
   createReview,
   updateReviewItem,
   deleteReview,
+  getReviewByUserProductOrder
 } = require("../controllers/reviewController");
 
 router.get("/all", getReviews);
 router.get("/byId/:id", getReviewById);
 router.get("/user/:userId", getReviewsByUser);
 router.post("/", createReview);
-router.put("/review/:id", updateReviewItem);
+router.put("/update/:id", updateReviewItem);
 router.delete("/:id", deleteReview);
-
+router.get("/find", getReviewByUserProductOrder);
 
 module.exports = router;

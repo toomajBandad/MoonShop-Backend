@@ -2,6 +2,27 @@ const Review = require("../models/reviewModel");
 const Product = require("../models/productModel");
 const User = require("../models/userModel");
 
+const getReviewByUserProductOrder = async (req, res) => {
+  try {
+    const { userId, productId, orderId } = req.query;
+
+    if (!userId || !productId || !orderId) {
+      return res.status(400).json({ msg: "Missing query parameters." });
+    }
+
+    const review = await Review.findOne({ userId, productId, orderId }).populate("userId");
+
+    if (!review) {
+      return res.status(404).json({ msg: "Review not found." });
+    }
+
+    res.status(200).json(review);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
+
 // Get all reviews
 const getReviews = async (req, res) => {
   try {
@@ -45,11 +66,11 @@ const getReviewsByUser = async (req, res) => {
 // Create a new review
 const createReview = async (req, res) => {
   try {
-    const { userId, productId, rating, comment } = req.body;
+    const { userId, productId, orderId, rating, comment } = req.body;
 
-    if (!userId || !productId || !rating) {
+    if (!userId || !productId || !rating || !orderId) {
       return res.status(400).json({
-        msg: "Missing required fields: userId, productId, rating",
+        msg: "Missing required fields: userId, productId, orderId, rating",
       });
     }
 
@@ -58,7 +79,7 @@ const createReview = async (req, res) => {
       return res.status(400).json({ msg: "Product not found" });
     }
 
-    const existing = await Review.findOne({ userId, productId });
+    const existing = await Review.findOne({ orderId, productId });
     if (existing) {
       return res
         .status(400)
@@ -68,6 +89,7 @@ const createReview = async (req, res) => {
     const newReview = await Review.create({
       userId,
       productId,
+      orderId,
       rating,
       comment,
     });
@@ -123,4 +145,5 @@ module.exports = {
   createReview,
   updateReviewItem,
   deleteReview,
+  getReviewByUserProductOrder
 };
