@@ -4,7 +4,49 @@ const Tag = require("../models/tagModel");
 
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({});
+    const {
+      category,
+      minPrice,
+      maxPrice,
+      minDiscount,
+      maxDiscount,
+      minRate,
+      maxRate,
+    } = req.query;
+
+    const filter = {};
+
+    // Filter by category name
+    if (category) {
+      const foundCategory = await Category.findOne({ name: category });
+      if (foundCategory) {
+        filter.category = foundCategory._id;
+      }
+    }
+
+    // Filter by price range
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    // Filter by discount range
+    if (minDiscount || maxDiscount) {
+      filter.discount = {};
+      if (minDiscount) filter.discount.$gte = Number(minDiscount);
+      if (maxDiscount) filter.discount.$lte = Number(maxDiscount);
+    }
+
+    // Filter by rating range
+    if (minRate || maxRate) {
+      filter.ratings = {};
+      if (minRate) filter.ratings.$gte = Number(minRate);
+      if (maxRate) filter.ratings.$lte = Number(maxRate);
+    }
+
+    const products = await Product.find(filter).populate("tags");
+
     res.json(products);
   } catch (error) {
     res.status(500).json({ msg: error.message });
@@ -91,7 +133,9 @@ const createProduct = async (req, res) => {
         .json({ msg: "one or more product data did not send" });
     }
 
-    const existingProduct = await Product.findOne({ name: name.trim().toLowerCase() });
+    const existingProduct = await Product.findOne({
+      name: name.trim().toLowerCase(),
+    });
     if (existingProduct) {
       return res.status(409).json({ msg: "Product already exists" });
     }
