@@ -189,12 +189,9 @@ const updateProduct = async (req, res) => {
       !desc ||
       !price ||
       !discount ||
-      !sold ||
       !images ||
-      !category ||
       !stock ||
-      !ratings ||
-      !reviews
+      !ratings
     ) {
       return res
         .status(400)
