@@ -44,12 +44,19 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
-    reviewsList: {
+    reviewsList: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Review",
+      },
+    ],
+    ordersList: {
       type: Array,
       required: false,
     },
-    ordersList: {
-      type: Array,
+    cart: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Cart",
       required: false,
     },
   },

@@ -1,9 +1,9 @@
 const Category = require("../models/categoryModel");
 
-const getCategorys = async (req, res) => {
+const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({});
-    res.json(categories);
+    const categories = await Category.find({}).populate("parentId");
+    res.status(200).json(categories);
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
@@ -81,7 +81,7 @@ const deleteCategory = async (req, res) => {
 };
 
 module.exports = {
-  getCategorys,
+  getCategories,
   getCategoryById,
   createCategory,
   updateCategory,

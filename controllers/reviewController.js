@@ -2,6 +2,18 @@ const Review = require("../models/reviewModel");
 const Product = require("../models/productModel");
 const User = require("../models/userModel");
 
+// Get all reviews
+const getReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find()
+      .populate("userId")
+      .populate("productId");
+    res.status(200).json(reviews);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
 const getReviewByUserProductOrder = async (req, res) => {
   try {
     const { userId, productId, orderId } = req.query;
@@ -10,24 +22,17 @@ const getReviewByUserProductOrder = async (req, res) => {
       return res.status(400).json({ msg: "Missing query parameters." });
     }
 
-    const review = await Review.findOne({ userId, productId, orderId }).populate("userId");
+    const review = await Review.findOne({
+      userId,
+      productId,
+      orderId,
+    }).populate("userId");
 
     if (!review) {
       return res.status(404).json({ msg: "Review not found." });
     }
 
     res.status(200).json(review);
-  } catch (error) {
-    res.status(500).json({ msg: error.message });
-  }
-};
-
-
-// Get all reviews
-const getReviews = async (req, res) => {
-  try {
-    const reviews = await Review.find().populate("userId");
-    res.status(200).json(reviews);
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
@@ -127,6 +132,30 @@ const updateReviewItem = async (req, res) => {
   }
 };
 
+// Toggle review acceptance
+const toggleReviewAcceptance = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ msg: "Review not found!" });
+    }
+
+    const updatedReview = await Review.findByIdAndUpdate(
+      req.params.id,
+      { isAccepted: !review.isAccepted },
+      { new: true }
+    );
+
+    res.status(200).json({
+      msg: `Review has been ${updatedReview.isAccepted ? "accepted" : "rejected"}.`,
+      review: updatedReview,
+    });
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
+
 // Delete a review
 const deleteReview = async (req, res) => {
   try {
@@ -144,6 +173,7 @@ module.exports = {
   getReviewsByUser,
   createReview,
   updateReviewItem,
+  toggleReviewAcceptance,
   deleteReview,
-  getReviewByUserProductOrder
+  getReviewByUserProductOrder,
 };

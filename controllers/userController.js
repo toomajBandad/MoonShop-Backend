@@ -1,5 +1,7 @@
 const User = require("../models/userModel");
 const Cart = require("../models/cartModel");
+const Review = require("../models/reviewModel");
+const Order = require("../models/orderModel");
 const Validator = require("../validators/validators");
 const jwt = require("jsonwebtoken");
 const brevo = require("@getbrevo/brevo");
@@ -54,49 +56,55 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { username, password, email } = req.body;
+    let { username, password, email } = req.body;
 
+    // Normalize email
+    email = email.toLowerCase();
+
+    // Validate required fields
     if (!username || !password || !email) {
       return res
         .status(400)
-        .json({ msg: "error : username, password or email not existed" });
-    }
-    if (!Validator.passwordValidator(password)) {
-      return res.status(400).json({ msg: "password is not acceptable" });
-    }
-    if (!Validator.emailValidator(email)) {
-      return res.status(400).json({ msg: "email format is not acceptable" });
+        .json({ msg: "Username, password, and email are required." });
     }
 
+    // Validate password and email format
+    if (!Validator.passwordValidator(password)) {
+      return res
+        .status(400)
+        .json({ msg: "Password does not meet security requirements." });
+    }
+    if (!Validator.emailValidator(email)) {
+      return res.status(400).json({ msg: "Invalid email format." });
+    }
+
+    // Check for duplicates
     const [emailDuplicate, usernameDuplicate] = await Promise.all([
       User.findOne({ email }),
       User.findOne({ username }),
     ]);
-
     if (emailDuplicate) {
       return res.status(400).json({
-        msg: "Email Duplicated : This user has been registered before with this Email",
+        msg: "Email already registered.",
       });
     }
-
     if (usernameDuplicate) {
       return res.status(400).json({
-        msg: "Username Duplicated : This user has been registered before with this Username",
+        msg: "Username already taken.",
       });
     }
 
-    //Bcrypy Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    //Creating new user
+    // Create user
     const newUser = await User.create({
-      username: username,
+      username,
       password: hashedPassword,
-      email: email,
+      email,
     });
 
-    //Sign User and create Token
+    // Generate token
     const token = jwt.sign(
       {
         username: newUser.username,
@@ -105,21 +113,21 @@ const createUser = async (req, res) => {
       process.env.JWT_SECRET
     );
 
+    // Create empty cart
     const cart = await Cart.create({
-      //create user empty cart
       userId: newUser._id,
       items: [],
     });
 
     res.status(201).json({
-      token: token,
+      token,
       token_type: "Bearer",
       msg: "User created successfully",
       user: newUser,
       cart,
     });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "Internal server error" });
   }
 };
 
@@ -188,47 +196,98 @@ const sendMail = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const updateFields = {};
+    const userId = req.params.id;
+    let { username, email, addressesList } = req.body;
 
-    // Only add fields that are present in req.body
-    if (req.body.username) updateFields.username = req.body.username;
-    if (req.body.email) updateFields.email = req.body.email;
-    if (req.body.password) {
-      const saltRounds = 10;
-      updateFields.password = await bcrypt.hash(req.body.password, saltRounds);
+    // Prevent empty update
+    if (!username && !email && !addressesList) {
+      return res.status(400).json({ msg: "No valid fields provided for update." });
     }
-    if (req.body.addressesList)
-      updateFields.addressesList = req.body.addressesList;
-    if (req.body.creditBalance !== undefined)
-      updateFields.creditBalance = req.body.creditBalance;
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: updateFields },
-      { new: true }
-    );
+    // Sanitize input
+    if (username) username = username.trim();
+    if (email) email = email.toLowerCase().trim();
 
+    // Check for duplicate email
+    if (email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser && existingUser._id.toString() !== userId) {
+        return res.status(409).json({ msg: "Email already in use." });
+      }
+    }
+
+    // Optional: Protect admin accounts
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ msg: "User not found!" });
     }
 
-    return res.status(200).json({ msg: "User updated successfully", user });
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email, addressesList },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    res.json({ msg: "User updated successfully", user: updatedUser });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "Internal server error", error: error.message });
+  }
+};
+
+const updatePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.params.id;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect current password" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const userId = req.params.id;
 
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ msg: "User did not find !" });
+      return res.status(404).json({ msg: "User not found!" });
     }
 
-    res.json({ msg: "User deleted successfully" });
+    // Delete related data
+    await Promise.all([
+      Cart.deleteOne({ userId }),
+      Review.deleteMany({ userId }),
+      Order.deleteMany({ userId }),
+    ]);
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ msg: "User and related data deleted successfully" });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "Internal server error" });
   }
 };
 
@@ -279,6 +338,7 @@ module.exports = {
   createUser,
   sendMail,
   updateUser,
+  updatePassword,
   deleteUser,
   loginUser,
 };

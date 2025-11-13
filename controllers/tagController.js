@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Tag = require("../models/tagModel");
 
 const getTags = async (req, res) => {
@@ -80,7 +81,6 @@ const updateTag = async (req, res) => {
 
 const deleteTag = async (req, res) => {
   try {
-    // Validate the tag ID format
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ msg: "Invalid tag ID" });
     }
@@ -93,9 +93,11 @@ const deleteTag = async (req, res) => {
 
     res.json({ msg: "Tag deleted successfully", tag });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    console.error("Delete error:", error);
+    res.status(500).json({ msg: "Internal server error" });
   }
 };
+
 
 module.exports = {
   getTags,

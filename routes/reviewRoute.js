@@ -7,6 +7,7 @@ const {
   getReviewsByUser,
   createReview,
   updateReviewItem,
+  toggleReviewAcceptance,
   deleteReview,
   getReviewByUserProductOrder
 } = require("../controllers/reviewController");
@@ -16,6 +17,7 @@ router.get("/byId/:id", getReviewById);
 router.get("/user/:userId", getReviewsByUser);
 router.post("/", createReview);
 router.put("/update/:id", updateReviewItem);
+router.patch("/update/:id", toggleReviewAcceptance);
 router.delete("/:id", deleteReview);
 router.get("/find", getReviewByUserProductOrder);
 
