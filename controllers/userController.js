@@ -33,7 +33,7 @@ const getMe = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({});
+    const users = await User.find({}).select("-password -__v");
     res.json(users);
   } catch (error) {
     res.status(500).json({ msg: error.message });
@@ -42,15 +42,15 @@ const getUsers = async (req, res) => {
 
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select("-password -__v");
 
     if (!user) {
-      return res.status(404).json({ msg: "User did not find !" });
+      return res.status(404).json({ msg: "User not found." });
     }
 
-    res.json(user);
+    res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "Server error", error: error.message });
   }
 };
 
@@ -135,30 +135,25 @@ const sendMail = async (req, res) => {
   const { userId, type, subject } = req.body;
 
   if (!userId || !type || !subject) {
-    return res
-      .status(404)
-      .json({ message: "error in userId or type or subject" });
+    return res.status(400).json({ message: "Missing userId, type, or subject" });
   }
 
   const user = await User.findById(userId);
-
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
 
   const apiInstance = new brevo.TransactionalEmailsApi();
-  let apiKey = apiInstance.authentications["apiKey"];
-  apiKey.apiKey = process.env.BREVO_API_KEY;
+  apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
   const sendSmtpEmail = new brevo.SendSmtpEmail();
-
   sendSmtpEmail.subject = subject;
-  {
-    type === "Welcome"
-      ? (sendSmtpEmail.htmlContent = ` 
+
+  if (type === "Welcome") {
+    sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial, sans-serif; background-color: #f4f4f7; padding: 30px; border-radius: 8px;">
         <h1 style="color: #01796f;">Hello ${user.username} 👋</h1>
-        <p>Welcome aboard!</p>
+        <p>Welcome shopping!</p>
         <p>Thanks for signing up—your journey with us starts now, and we're excited to have you as part of our community.</p>
         <ul>
           <li>🔒 Member-only features</li>
@@ -166,32 +161,32 @@ const sendMail = async (req, res) => {
           <li>💬 Personalized support</li>
         </ul>
         <p>Just hit reply if you need anything. We're here for you!</p>
-        <p style="margin-top: 20px;">Cheers,<br><strong>The Team 🚀</strong></p>
-      <small style="color: #888;">You received this email because you signed up for our service.</small>
+        <p style="margin-top: 20px;">Cheers,<br><strong>The Team Moon Shop🚀</strong></p>
+        <small style="color: #888;">You received this email because you signed up for moon shop service.</small>
       </div>
-`)
-      : (sendSmtpEmail.htmlContent = `<p>Information from Casa verde!</p>`);
-    // ? (sendSmtpEmail.htmlContent = `<h1>Hello ${user.username} 👋</h1><p>Thanks for signing up!</p>`)
+    `;
+  } else {
+    sendSmtpEmail.htmlContent = `<p>Information from Moon Shop !</p>`;
   }
+
   sendSmtpEmail.sender = {
-    name: "Casa Verde",
-    email: "tbandad@gmail.com",
-  };
-  sendSmtpEmail.to = [{ email: user.email, name: user.username }];
-  sendSmtpEmail.replyTo = {
-    name: "Casa Verde",
+    name: "Moon Shop",
     email: "tbandad@gmail.com",
   };
 
-  apiInstance.sendTransacEmail(sendSmtpEmail).then(
-    function (data) {
-      res.send("Email sent successfully via Brevo API");
-    },
-    function (error) {
-      console.error(error);
-      res.status(500).send("Error sending email");
-    }
-  );
+  sendSmtpEmail.to = [{ email: user.email, name: user.username }];
+  sendSmtpEmail.replyTo = {
+    name: "Moon Shop",
+    email: "tbandad@gmail.com",
+  };
+
+  try {
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    res.send("Email sent successfully via Brevo API");
+  } catch (error) {
+    console.error("Email error:", error);
+    res.status(500).send("Error sending email");
+  }
 };
 
 const updateUser = async (req, res) => {
@@ -201,7 +196,9 @@ const updateUser = async (req, res) => {
 
     // Prevent empty update
     if (!username && !email && !addressesList) {
-      return res.status(400).json({ msg: "No valid fields provided for update." });
+      return res
+        .status(400)
+        .json({ msg: "No valid fields provided for update." });
     }
 
     // Sanitize input
@@ -234,7 +231,9 @@ const updateUser = async (req, res) => {
 
     res.json({ msg: "User updated successfully", user: updatedUser });
   } catch (error) {
-    res.status(500).json({ msg: "Internal server error", error: error.message });
+    res
+      .status(500)
+      .json({ msg: "Internal server error", error: error.message });
   }
 };
 

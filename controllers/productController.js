@@ -55,15 +55,19 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("tags");
+    const { id } = req.params;
+
+    const product = await Product.findById(id).populate("tags");
 
     if (!product) {
-      return res.status(404).json({ msg: "Product did not find" });
+      return res.status(404).json({ msg: "Product not found" });
     }
 
-    return res.status(201).json({ product });
+    return res.status(200).json({ product });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res
+      .status(500)
+      .json({ msg: "Internal server error", error: error.message });
   }
 };
 
@@ -72,32 +76,40 @@ const getProductByCategory = async (req, res) => {
     const category = await Category.findOne({ name: req.params.catName });
 
     if (!category) {
-      return res.status(404).json({ msg: "category of product did not find" });
+      return res.status(404).json({ msg: "Category not found" });
     }
 
-    const productList = await Product.find({ category: category });
+    const productList = await Product.find({ category: category._id }).populate(
+      "tags"
+    );
 
-    return res.status(201).json({ productList });
+    return res.status(200).json({ productList });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res
+      .status(500)
+      .json({ msg: "Internal server error", error: error.message });
   }
 };
 
 const getProductByTag = async (req, res) => {
   try {
-    const tag = await Tag.findOne({
-      name: req.params.tagName.trim().toLowerCase(),
-    });
+    const rawTag = req.params.tagName;
+    const normalizedTag =
+      typeof rawTag === "string" ? rawTag.trim().toLowerCase() : "";
+
+    const tag = await Tag.findOne({ name: normalizedTag });
 
     if (!tag) {
-      return res.status(404).json({ msg: "Tag is unknown" });
+      return res.status(404).json({ msg: "Tag not found" });
     }
 
     const productList = await Product.find({ tags: tag._id }).populate("tags");
 
     return res.status(200).json({ productList });
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res
+      .status(500)
+      .json({ msg: "Internal server error", error: error.message });
   }
 };
 
@@ -114,7 +126,7 @@ const createProduct = async (req, res) => {
       categoryId,
       stock,
       ratings,
-      reviews,
+      tags,
     } = req.body;
 
     if (
@@ -156,6 +168,7 @@ const createProduct = async (req, res) => {
       category,
       stock,
       ratings,
+      tags,
     });
 
     res.status(201).json({
@@ -181,6 +194,7 @@ const updateProduct = async (req, res) => {
       stock,
       ratings,
       reviews,
+      tags
     } = req.body;
 
     if (
@@ -210,6 +224,7 @@ const updateProduct = async (req, res) => {
       stock,
       ratings,
       reviews,
+      tags,
     };
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
       new: true,

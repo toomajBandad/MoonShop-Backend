@@ -16,6 +16,10 @@ const categorySchema = new mongoose.Schema(
       ref: "Category",
       default: null,
     },
+    level: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

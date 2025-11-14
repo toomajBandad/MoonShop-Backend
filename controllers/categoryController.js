@@ -9,6 +9,33 @@ const getCategories = async (req, res) => {
   }
 };
 
+const getMainCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ parentId: null });
+    res.status(200).json(categories);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
+const getSubcategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ level: 1 });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
+const getLeafCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ level: 2 });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
 const getCategoryById = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
@@ -82,6 +109,9 @@ const deleteCategory = async (req, res) => {
 
 module.exports = {
   getCategories,
+  getMainCategories,
+  getSubcategories,
+  getLeafCategories,
   getCategoryById,
   createCategory,
   updateCategory,
