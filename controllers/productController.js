@@ -194,19 +194,10 @@ const updateProduct = async (req, res) => {
       stock,
       ratings,
       reviews,
-      tags
+      tags,
     } = req.body;
 
-    if (
-      !name ||
-      !brand ||
-      !desc ||
-      !price ||
-      !discount ||
-      !images ||
-      !stock ||
-      !ratings
-    ) {
+    if (!name || !brand || !desc || !price || !images || !stock) {
       return res
         .status(400)
         .json({ msg: "one or more product data did not send" });
